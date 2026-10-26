@@ -1,0 +1,11 @@
+# závislosti
+node_modules/
+
+# dáta používateľa (turnaje, výsledky, API kľúče)
+data/
+
+# dočasné a systémové súbory
+*.tmp
+*.log
+Thumbs.db
+.DS_Store

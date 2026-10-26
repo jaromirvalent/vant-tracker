@@ -1,0 +1,17 @@
+{
+  "name": "vant-tracker",
+  "version": "2.0.0",
+  "private": true,
+  "description": "VANT CS2 tournament tracker - lokálny server (proxy na turnajové API + Claude)",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

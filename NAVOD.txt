@@ -1,0 +1,24 @@
+VANT Tracker 3.0 – návod
+========================
+
+SPUSTENIE
+Dvojklik na ikonu "VANT Tracker" na ploche.
+Otvorí sa prehliadač na http://localhost:8787 a na lište sa objaví malé okno servera.
+To okno nezatváraj – bez neho sa turnaje nenačítajú a nič sa neuloží.
+
+KARTY
+- Turnaje    – 1v1 a 2v2 cupy o peniaze na najbližšie 2 týždne (obnovujú sa samé každých 30 min)
+               Hviezdička "Sledovať" = pridať do Moje
+- Moje       – sledované turnaje: Plánujem / Prihlásený / Odohrané / Nehrám, výsledky, bilancia
+- Kalendár   – moje turnaje po dňoch
+- Pridať     – screenshot turnaja (Ctrl+V) alebo ručne; vhodné pre FastCup, Gamers Club
+- Nastavenia – módy (1v1, 2v2…), stránky, Claude kľúč, zálohy
+
+KDE SÚ MOJE DÁTA
+Všetko je v jednom súbore:  VANT Tracker\data\vant-data.json
+Každý deň sa robí záloha do:  VANT Tracker\data\zalohy
+Dáta nie sú v prehliadači – fungujú aj po vymazaní histórie či v inom prehliadači.
+
+STRÁNKY
+Automaticky: FastCup a Vieforit (denné 1v1/2v2 cupy o peniaze), Challengermode, Toornament (s kľúčom)
+Cez screenshot: Gamers Club (nemá verejné dáta)

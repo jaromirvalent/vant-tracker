@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VANT – 1v1 & 2v2 turnaje</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d11;--raise:#15171d;--hover:#181a21;--line:#22252e;
+  --text:#eceef2;--muted:#8b909c;--faint:#5c616d;
+  --acc:#3ddc84;--gold:#f2c94c;--red:#ef5b5b;--blue:#5aa9ff;
+}
+body{background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+button:disabled{opacity:.4;cursor:default}
+a{color:inherit;text-decoration:none}
+.ic{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:18px;height:18px}
+.hidden{display:none!important}
+
+/* hlavička */
+header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:rgba(12,13,17,.92);backdrop-filter:blur(12px)}
+.bar{max-width:980px;margin:0 auto;padding:0 20px;height:64px;display:flex;align-items:center;gap:28px}
+.brand{font-weight:800;font-size:19px;letter-spacing:.14em;display:flex;align-items:center;gap:9px}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+nav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{display:flex;align-items:center;gap:8px;height:64px;padding:0 12px;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--text)}
+nav button.on{color:var(--text);border-bottom-color:var(--acc)}
+nav .n{font-size:12px;color:var(--acc);font-weight:700}
+.refresh{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;white-space:nowrap}
+.refresh:hover{color:var(--text)}
+.refresh.busy .ic{animation:spin 1s linear infinite;color:var(--gold)}
+.refresh.err{color:var(--red)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+main{max-width:980px;margin:0 auto;padding:34px 20px 80px}
+.view{display:none}.view.on{display:block}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.lead{color:var(--muted);margin-top:4px}
+
+/* filtre – len text, žiadne boxy */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px;margin:26px 0 8px}
+.opts{display:flex;gap:4px}
+.opts button{padding:6px 11px;border-radius:8px;color:var(--muted);font-weight:600;font-size:14px}
+.opts button:hover{color:var(--text)}
+.opts button.on{color:var(--bg);background:var(--text)}
+.filters select{background:none;border:0;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;padding:6px 2px}
+.filters select option{background:var(--raise);color:var(--text)}
+.find{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--faint);border-bottom:1px solid var(--line);padding:4px 0}
+.find input{background:none!important;border:0!important;outline:0;width:170px;color:var(--text);font-size:14px;padding:2px 0!important}
+.find:focus-within{border-color:var(--acc);color:var(--muted)}
+
+/* zoznam */
+.day{margin-top:30px}
+.dayT{display:flex;align-items:baseline;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.dayT b{font-size:15px;font-weight:700;text-transform:capitalize}
+.dayT span{color:var(--faint);font-size:13px}
+.dayT.today b{color:var(--acc)}
+.row{display:grid;grid-template-columns:62px 1fr auto 44px 34px;align-items:center;gap:16px;padding:14px 10px;border-bottom:1px solid var(--line);transition:background .12s}
+.row:hover{background:var(--hover)}
+.row.done{opacity:.55}
+.tm{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;position:relative}
+.tm.live:before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)}
+.nm{min-width:0;cursor:pointer}
+.nm b{display:block;font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm small{display:block;color:var(--muted);font-size:13px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md{font-weight:700;font-size:12.5px;margin-right:8px}
+.md.m1{color:var(--acc)}.md.m2{color:var(--blue)}.md.m3,.md.m5{color:var(--muted)}
+.full{color:var(--red)}
+.pz{text-align:right;min-width:74px}
+.pz b{display:block;color:var(--gold);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.pz small{color:var(--faint);font-size:12px}
+.pz.no b{color:var(--faint);font-weight:500}
+.star{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--faint);transition:.12s}
+.star .ic{width:24px;height:24px}
+.star:hover{color:var(--gold);background:rgba(242,201,76,.08)}
+.star.on{color:var(--gold)}
+.star.on .ic{fill:var(--gold)}
+.go{width:34px;height:34px;display:grid;place-items:center;color:var(--faint);border-radius:8px}
+.go:hover{color:var(--text)}
+.more{display:block;margin:22px auto 0;color:var(--muted);font-weight:600;padding:10px 16px}
+.more:hover{color:var(--text)}
+.empty{text-align:center;color:var(--muted);padding:70px 20px}
+.empty b{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
+.link{color:var(--acc);font-weight:600}
+.link:hover{text-decoration:underline}
+
+/* Moje – súhrn v jednej vete, status ako text */
+.summary{display:flex;gap:30px;flex-wrap:wrap;margin-top:22px;color:var(--muted);font-size:14px}
+.summary b{display:block;color:var(--text);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.summary b.pos{color:var(--acc)}.summary b.neg{color:var(--red)}
+.st{font-size:13px;font-weight:600;padding:5px 10px;border-radius:20px;white-space:nowrap;color:var(--muted);border:1px solid var(--line)}
+.st:hover{border-color:var(--muted)}
+.st.registered{color:var(--acc);border-color:rgba(61,220,132,.4)}
+.st.played{color:var(--gold);border-color:rgba(242,201,76,.4)}
+.st.skipped{color:var(--faint)}
+.row.mine{grid-template-columns:62px 1fr auto auto 34px}
+
+/* kalendár – len čiary */
+.calHead{display:flex;align-items:center;gap:6px;margin:22px 0 12px}
+.calHead b{font-size:17px;text-transform:capitalize;min-width:150px}
+.calHead button{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.calHead button:hover{color:var(--text);background:var(--hover)}
+.calHead .txt{width:auto;padding:0 10px;font-weight:600;font-size:14px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.cal div{border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-height:96px;padding:8px;min-width:0}
+.cal .h{min-height:0;color:var(--faint);font-size:12px;font-weight:600;text-transform:uppercase}
+.cal .n{font-size:13px;color:var(--muted);font-weight:600}
+.cal .t .n{color:var(--bg);background:var(--acc);border-radius:20px;padding:1px 7px}
+.cal .x{background:rgba(255,255,255,.012)}
+.ev{display:block;width:100%;text-align:left;font-size:12px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.ev:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c,var(--muted));margin-right:6px;vertical-align:1px}
+.ev:hover{color:var(--acc)}
+
+/* formuláre */
+.sec{margin-top:34px}
+.sec h2{font-size:17px;font-weight:700;margin-bottom:4px}
+.sec .lead{font-size:14px;margin-bottom:14px}
+label.l{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:500}
+input[type=text],input:not([type]),input[type=date],input[type=time],input[type=number],input[type=password],select.f,textarea{width:100%;background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:11px 12px;outline:0;color:var(--text)}
+input:focus,select.f:focus,textarea:focus{border-color:var(--acc)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.stack{display:grid;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:700;background:var(--acc);color:#07140c}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn.ghost{background:none;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--muted)}
+.btn.red{background:none;color:var(--red);border:1px solid rgba(239,91,91,.35)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:36px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--acc);color:var(--text)}
+.drop .ic{width:34px;height:34px;color:var(--acc);margin-bottom:8px}
+.drop b{display:block;color:var(--text);font-size:16px;margin-bottom:2px}
+.drop img{max-width:100%;max-height:320px;border-radius:8px;display:block;margin:0 auto}
+.drop.has{padding:10px}
+.status{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+.status.ok{color:var(--acc)}.status.err{color:var(--red)}
+.modes{display:flex;gap:6px}
+.modes button{padding:8px 14px;border-radius:8px;border:1px solid var(--line);color:var(--muted);font-weight:600}
+.modes button.on{border-color:var(--acc);color:var(--acc)}
+.batch{display:none;margin-top:12px;font-size:14px;color:var(--muted);align-items:center;gap:12px;flex-wrap:wrap}
+.batch.show{display:flex}
+
+/* nastavenia – riadky */
+.set{display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+.set .tx{flex:1;min-width:0}
+.set b{font-weight:600}
+.set p{color:var(--muted);font-size:13.5px;margin-top:2px}
+.set p.ok{color:var(--acc)}.set p.err{color:var(--red)}
+.set input{margin-top:10px;max-width:380px}
+.sw{position:relative;width:44px;height:26px;flex:none}
+.sw input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:20px;background:var(--line);transition:.2s}
+.sw span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:var(--text);transition:.2s}
+.sw input:checked+span{background:var(--acc)}
+.sw input:checked+span:before{transform:translateX(18px);background:#07140c}
+.sw input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+.ext{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.ext:hover b{color:var(--acc)}
+.ext .tx{flex:1}.ext b{font-weight:600}.ext p{color:var(--muted);font-size:13.5px}
+.ext .ic{color:var(--faint)}
+.note{color:var(--muted);font-size:13.5px;padding:12px 14px;border-left:2px solid var(--line);margin-top:14px}
+.note.err{border-color:var(--red);color:var(--text)}
+.note code{color:var(--text)}
+.log{font:12px/1.6 ui-monospace,Consolas,monospace;color:var(--faint);max-height:140px;overflow:auto;margin-top:14px}
+.log .ok{color:var(--acc)}.log .err{color:var(--red)}
+
+/* detail */
+dialog{margin:auto;width:min(560px,calc(100vw - 24px));max-height:88vh;overflow:auto;background:var(--raise);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:26px}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+.dTop{display:flex;gap:12px;align-items:flex-start}
+.dTop h2{flex:1;font-size:21px;font-weight:800;line-height:1.3}
+.x{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.x:hover{background:var(--hover);color:var(--text)}
+.dl{margin-top:16px}
+.dl div{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.dl dt{color:var(--muted)}.dl dd{text-align:right;font-weight:600}
+.dNote{color:var(--muted);font-size:14px;white-space:pre-wrap;margin-top:14px;overflow-wrap:anywhere}
+details{margin-top:18px}
+summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px}
+summary:hover{color:var(--text)}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:50;max-width:calc(100vw - 30px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--red);color:#fff}
+footer{max-width:980px;margin:0 auto;padding:0 20px 30px;color:var(--faint);font-size:12.5px}
+
+@media(max-width:700px){
+  .bar{gap:12px;padding:0 12px}
+  .brand span{display:none}
+  nav button{padding:0 9px;gap:6px}
+  nav button .lbl{display:none}
+  nav button .ic{width:24px;height:24px}
+  .refresh span{display:none}
+  main{padding:24px 14px 70px}
+  .find{margin-left:0;width:100%}.find input{width:100%}
+  .row,.row.mine{grid-template-columns:50px 1fr auto 40px;gap:10px;padding:12px 4px}
+  .row .go{display:none}
+  .nm b,.nm small{white-space:normal}
+  .row.mine .st{grid-column:2/-1;justify-self:start}
+  .g2,.g3{grid-template-columns:1fr}
+  .cal div{min-height:58px;padding:4px}.ev{font-size:10px}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 5.9 6.6 1-4.7 4.6 1.1 6.5L12 17.4l-5.9 3.1 1.1-6.5L2.5 9.4l6.6-1z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-set" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+</svg>
+
+<header>
+  <div class="bar">
+    <div class="brand"><i></i><span>VANT</span></div>
+    <nav aria-label="Menu">
+      <button class="on" data-view="find"><svg class="ic"><use href="#i-list"/></svg><span class="lbl">Turnaje</span></button>
+      <button data-view="mine"><svg class="ic"><use href="#i-star"/></svg><span class="lbl">Moje</span><span class="n" id="nMine"></span></button>
+      <button data-view="cal"><svg class="ic"><use href="#i-cal"/></svg><span class="lbl">Kalendár</span></button>
+      <button data-view="add"><svg class="ic"><use href="#i-plus"/></svg><span class="lbl">Pridať</span></button>
+      <button data-view="set"><svg class="ic"><use href="#i-set"/></svg><span class="lbl">Nastavenia</span></button>
+    </nav>
+    <button class="refresh" id="refresh" title="Načítať turnaje znova"><svg class="ic sm"><use href="#i-refresh"/></svg><span id="refreshTxt">—</span></button>
+  </div>
+</header>
+
+<main>
+  <!-- TURNAJE -->
+  <section class="view on" id="view-find">
+    <h1>Turnaje</h1>
+    <p class="lead" id="findLead">Načítavam…</p>
+    <div class="filters">
+      <div class="opts" id="fMode"></div>
+      <div class="opts" id="fWhen"></div>
+      <select id="fSort" aria-label="Zoradiť"><option value="time">Podľa času</option><option value="prize">Najvyššia výhra</option></select>
+      <label class="find"><svg class="ic sm"><use href="#i-search"/></svg><input id="fQ" placeholder="Hľadať" aria-label="Hľadať"></label>
+    </div>
+    <div id="findList"></div>
+  </section>
+
+  <!-- MOJE -->
+  <section class="view" id="view-mine">
+    <h1>Moje turnaje</h1>
+    <p class="lead">Klikni na stav a prepni ho. Po odohraní zapíš výhru.</p>
+    <div class="summary" id="mineSum"></div>
+    <div class="filters"><div class="opts" id="mFilter"></div></div>
+    <div id="mineList"></div>
+  </section>
+
+  <!-- KALENDÁR -->
+  <section class="view" id="view-cal">
+    <h1>Kalendár</h1>
+    <div class="calHead">
+      <button data-cal="-1" aria-label="Predošlý mesiac"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button data-cal="1" aria-label="Ďalší mesiac"><svg class="ic"><use href="#i-right"/></svg></button>
+      <b id="calTitle"></b>
+      <button class="txt" data-cal="0">Dnes</button>
+    </div>
+    <div class="cal" id="calGrid"></div>
+  </section>
+
+  <!-- PRIDAŤ -->
+  <section class="view" id="view-add">
+    <h1>Pridať turnaj</h1>
+    <p class="lead">Vlož screenshot (Ctrl+V) alebo vyplň údaje ručne.</p>
+    <div class="sec">
+      <div class="drop" id="drop" role="button" tabindex="0" aria-label="Vložiť screenshot"></div>
+      <input type="file" id="fileImg" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      <div class="status" id="ocrStatus"></div>
+      <div class="batch" id="batch"><span id="batchTxt"></span><button class="btn ghost" id="batchAdd">Pridať všetky</button></div>
+    </div>
+    <div class="sec stack">
+      <div><label class="l" for="aName">Názov</label><input id="aName" placeholder="napr. Daily Aim Cup"></div>
+      <div class="g2">
+        <div><label class="l">Mód</label><div class="modes" id="aMode"></div></div>
+        <div><label class="l" for="aPlatform">Stránka</label><select class="f" id="aPlatform"></select></div>
+      </div>
+      <div class="g3">
+        <div><label class="l" for="aDate">Dátum</label><input id="aDate" type="date"></div>
+        <div><label class="l" for="aTime">Čas</label><input id="aTime" type="time"></div>
+        <div><label class="l" for="aSlots">Max. hráčov</label><input id="aSlots" inputmode="numeric"></div>
+      </div>
+      <div class="g3">
+        <div><label class="l" for="aP1">Výhra za 1. miesto (€)</label><input id="aP1" type="number" min="0" step="0.01"></div>
+        <div><label class="l" for="aPrize">Prize pool (€)</label><input id="aPrize" type="number" min="0" step="0.01"></div>
+        <div><label class="l" for="aBuyin">Vstupné (€)</label><input id="aBuyin" type="number" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div><label class="l" for="aUrl">Odkaz</label><input id="aUrl" placeholder="https://…"></div>
+      <div><label class="l" for="aNote">Poznámka</label><input id="aNote"></div>
+      <div class="actions"><button class="btn" id="aSave">Uložiť do Moje</button><button class="btn ghost" id="aReset">Vyčistiť</button></div>
+    </div>
+    <div class="sec">
+      <h2>Načítať z odkazu</h2>
+      <p class="lead">Claude prečíta stránku turnaja. Potrebuje API kľúč v Nastaveniach.</p>
+      <div class="g2" style="grid-template-columns:1fr auto"><input id="aiUrl" placeholder="https://…"><button class="btn ghost" id="aiUrlBtn">Načítať</button></div>
+    </div>
+  </section>
+
+  <!-- NASTAVENIA -->
+  <section class="view" id="view-set">
+    <h1>Nastavenia</h1>
+    <div id="srvNote"></div>
+    <div class="sec">
+      <h2>Módy</h2>
+      <p class="lead">Ktoré turnaje sa majú načítavať.</p>
+      <div class="modes" id="setModes"></div>
+    </div>
+    <div class="sec">
+      <h2>Automaticky načítavané stránky</h2>
+      <div id="srcList"></div>
+    </div>
+    <div class="sec">
+      <h2>Ďalšie stránky s 1v1 turnajmi</h2>
+      <p class="lead">Nedajú sa načítať automaticky. Otvor, odfoť zoznam turnajov a vlož v Pridať.</p>
+      <div id="extLinks"></div>
+    </div>
+    <div class="sec">
+      <h2>Claude (čítanie screenshotov)</h2>
+      <p class="lead">Kľúč z <a class="link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>. Bez neho sa číta jednoduchým OCR.</p>
+      <div class="g2" style="grid-template-columns:1fr 220px">
+        <input id="cKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-label="Claude API kľúč">
+        <select class="f" id="cModel" aria-label="Model"><option value="claude-opus-5-5">Opus 5.5 – najpresnejší</option><option value="claude-sonnet-5-5">Sonnet 5.5 – rýchlejší</option><option value="claude-haiku-5-5">Haiku 5.5 – najlacnejší</option></select>
+      </div>
+    </div>
+    <div class="sec">
+      <h2>Dáta</h2>
+      <p class="lead">Všetko sa ukladá do <code>data/vant-data.json</code> v priečinku aplikácie, denná záloha do <code>data/zalohy</code>.</p>
+      <div class="actions"><button class="btn ghost" id="expBtn">Stiahnuť zálohu</button><button class="btn ghost" id="impBtn">Nahrať zálohu / starú verziu</button><button class="btn red" id="wipeBtn">Vymazať moje turnaje</button></div>
+      <input type="file" id="impFile" accept="application/json,.json" hidden>
+      <div class="log" id="syncLog"></div>
+    </div>
+  </section>
+</main>
+<footer id="foot"></footer>
+
+<dialog id="dlg" aria-label="Detail turnaja"><div id="dlgIn"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+'use strict';
+/* ---------- pomocné ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const num=v=>{const n=Number(v);return isFinite(n)?n:0};
+const pad=n=>String(n).padStart(2,'0');
+const localISO=(d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const localHM=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const eur=v=>{const n=num(v);return n.toLocaleString('sk-SK',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €'};
+const icon=(id,c='')=>`<svg class="ic ${c}"><use href="#i-${id}"/></svg>`;
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'id-'+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
+function safeUrl(u){u=String(u||'').trim();if(!u)return'';if(/^https?:\/\//i.test(u))return u;if(/^[a-z][a-z0-9+.-]*:/i.test(u))return'';return'https://'+u}
+const plural=(n,a,b,c)=>n===1?a:n>1&&n<5?b:c;
+const HORIZON_DAYS=14;
+const MODES=['1v1','2v2','3v3','5v5'];
+const PLATFORMS=['Vieforit','FastCup','Challengermode','Gamers Club','Esportal','Toornament','FACEIT','Discord / Community','Iná stránka'];
+const EXT_LINKS=[
+  ['FastCup','https://cs2.fastcup.net/tournaments','Denné 1v1 Aim Cupy o peniaze'],
+  ['Gamers Club','https://cs.gamersclub.gg/tournaments','Free 1v1 a 2v2 turnaje o peniaze a skiny'],
+  ['Vieforit','https://vieforit.com/cs2/tournaments','Všetky turnaje priamo na stránke'],
+  ['Challengermode','https://www.challengermode.com/s/cs2/tournaments','Komunitné CS2 turnaje']
+];
+let toastT;
+function toast(m,err=false){const t=$('toast');t.textContent=m;t.className='toast show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200)}
+function syncLog(m,c=''){const el=$('syncLog'),d=document.createElement('div');d.className=c;d.textContent=`${new Date().toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'})}  ${m}`;el.appendChild(d);while(el.children.length>60)el.firstChild.remove();el.scrollTop=el.scrollHeight}
+function ocrStatus(m,c=''){const s=$('ocrStatus');s.textContent=m;s.className='status '+c}
+
+/* ---------- úložisko: súbor data/vant-data.json cez lokálny server ---------- */
+const MIRROR='vant.store.v3';
+function defaultSettings(){return{modes:['1v1','2v2'],sources:{fastcup:{on:true},vieforit:{on:true},challengermode:{on:true},toornament:{on:false,key:''}},claude:{key:'',model:'claude-opus-5-5'}}}
+let S={tournaments:[],feed:{items:[],sources:{},hidden:[]},settings:defaultSettings(),lastSync:0};
+let serverOk=null,saveT=null,syncing=false,calMonth=null,limit=40,aiBatch=[];
+const ui={mode:'',when:'14',mine:'upcoming'};
+const draft={image:'',mode:'1v1'};
+
+function normT(x){
+  if(!x||typeof x!=='object')return null;
+  const name=String(x.name||x.title||'').trim();if(!name)return null;
+  const date=/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'';
+  const time=/^\d{1,2}:\d{2}$/.test(x.time||'')?x.time.padStart(5,'0'):'';
+  let mode=String(x.mode||'1v1');if(/wingman/i.test(mode))mode='2v2';if(!MODES.includes(mode))mode='5v5';
+  return{
+    id:String(x.id||uid()),feedId:x.feedId||'',source:x.source||'manual',name,platform:String(x.platform||'Iná stránka'),mode,date,time,
+    startTs:num(x.startTs)||(date?new Date(date+'T'+(time||'00:00')).getTime():0),
+    buyin:num(x.buyin),prize:num(x.prize),p1:num(x.p1),prizeText:String(x.prizeText||''),
+    currentPlayers:x.currentPlayers===''||x.currentPlayers==null?'':String(x.currentPlayers),maxPlayers:x.maxPlayers?String(x.maxPlayers):'',
+    url:String(x.url||''),note:String(x.note||''),
+    status:['planned','registered','played','skipped'].includes(x.status)?x.status:'planned',
+    resultPlace:x.resultPlace||'',resultWin:num(x.resultWin)
+  };
+}
+function readOldLocal(){
+  const out=[],seen=new Set();
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(!/^vant\.tracker\.v\d+$/.test(k))continue;
+    const arr=JSON.parse(localStorage.getItem(k)||'[]');if(Array.isArray(arr))for(const x of arr){const t=normT(x);if(t&&!seen.has(t.id)){seen.add(t.id);out.push(t)}}}}catch(e){}
+  let key='';try{key=JSON.parse(localStorage.getItem('vant.settings.v200')||'{}').claude?.key||''}catch(e){}
+  return{tournaments:out,key};
+}
+function applyLoaded(j){
+  const d=defaultSettings(),s=j.settings||{};
+  S={tournaments:(j.tournaments||[]).map(normT).filter(Boolean),
+     feed:{items:Array.isArray(j.feed?.items)?j.feed.items:[],sources:j.feed?.sources||{},hidden:j.feed?.hidden||[]},
+     settings:{...d,...s,sources:{...d.sources},claude:{...d.claude,...(s.claude||{})}},lastSync:num(j.lastSync)};
+  for(const k of Object.keys(d.sources))S.settings.sources[k]={...d.sources[k],...((s.sources||{})[k]||{})};
+  if(!Array.isArray(S.settings.modes)||!S.settings.modes.length)S.settings.modes=d.modes;
+}
+async function loadStore(){
+  try{
+    const r=await fetch('/api/store',{cache:'no-store'});if(!r.ok)throw 0;
+    const j=await r.json();serverOk=true;
+    if(Array.isArray(j.tournaments)){applyLoaded(j);return}
+    const old=readOldLocal();
+    applyLoaded({tournaments:old.tournaments,settings:{claude:{key:old.key}}});
+    if(old.tournaments.length)toast(`Prevzatých ${old.tournaments.length} turnajov zo starej verzie`);
+    await pushStore();
+  }catch(e){serverOk=false;try{applyLoaded(JSON.parse(localStorage.getItem(MIRROR)||'{}'))}catch(e2){}}
+}
+function save(){try{localStorage.setItem(MIRROR,JSON.stringify(S))}catch(e){}clearTimeout(saveT);saveT=setTimeout(pushStore,500)}
+async function pushStore(){
+  try{const r=await fetch('/api/store',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)});if(!r.ok)throw 0;serverOk=true;$('foot').textContent='Uložené '+localHM(new Date())}
+  catch(e){serverOk=false;$('foot').textContent='Neuložené – server nebeží'}
+}
+
+/* ---------- server ---------- */
+async function post(path,body,timeout=60000){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);
+  try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:c.signal});
+    const j=await r.json().catch(()=>({error:'HTTP '+r.status}));if(!r.ok)throw new Error(j.error||'HTTP '+r.status);return j}
+  catch(e){if(e.name==='AbortError')throw new Error('Vypršal čas');if(e instanceof TypeError)throw new Error('Server nebeží');throw e}
+  finally{clearTimeout(t)}
+}
+async function getRemote(url,{headers={},ttl=0,json=true}={}){
+  const r=await post('/api/fetch',{url,headers,ttl},90000);
+  if(!r.ok){let m='HTTP '+r.status;if([401,403].includes(r.status))m+=' – skontroluj kľúč';throw new Error(m)}
+  if(!json)return r;
+  try{return JSON.parse(r.body)}catch(e){throw new Error('Neplatná odpoveď')}
+}
+function parseMoney(str){
+  const m=String(str||'').match(/([$€£])?\s*(\d[\d\s.,]*)\s*([$€£]|USD|EUR)?/i);if(!m)return 0;
+  let n=m[2].replace(/\s/g,'');n=/^\d{1,3}([.,]\d{3})+$/.test(n)?n.replace(/[.,]/g,''):n.replace(',','.');
+  const c=(m[1]||m[3]||'€').toUpperCase();return Math.round(num(n)*(c==='$'||c==='USD'?0.92:c==='£'?1.16:1)*100)/100;
+}
+function mapMode(s){s=String(s||'').toLowerCase();if(/wingman/.test(s))return'2v2';const m=s.match(/\b([1-5])\s*(?:v|vs|x)\s*\1\b/);return m?`${m[1]}v${m[1]}`:''}
+
+/* ---------- zdroje ---------- */
+function item(o){
+  const s=num(o.startTs);
+  return{feedId:String(o.feedId).replace(/[^\w:.-]/g,'_'),source:o.source,platform:o.platform,name:String(o.name||'').trim().slice(0,140),
+    startTs:s,date:s?localISO(new Date(s)):'',time:o.noTime?'':s?localHM(new Date(s)):'',mode:o.mode||'1v1',
+    currentPlayers:o.currentPlayers==null?'':String(o.currentPlayers),maxPlayers:o.maxPlayers?String(o.maxPlayers):'',
+    buyin:num(o.buyin),prize:num(o.prize),p1:num(o.p1),prizeText:o.prizeText||'',url:safeUrl(o.url),note:String(o.note||'').slice(0,600),live:!!o.live};
+}
+function vfPlaces(v){const m=String(v||'').match(/PLACE_(\d+)(?:_(\d+))?/);return m?[+m[1],+(m[2]||m[1])]:[0,0]}
+async function srcVieforit(){
+  const j=await getRemote('https://vieforit.com/api/trpc/tournament.getUpcoming',{ttl:300});
+  const list=j?.result?.data?.json;if(!Array.isArray(list))throw new Error('Neočakávaná odpoveď');
+  const out=[],hz=Date.now()+HORIZON_DAYS*864e5;
+  for(const x of list){
+    const s=Date.parse(x.planned_start_at);
+    if(!isFinite(s)||s>hz||['FINISHED','CANCELLED'].includes(x.status))continue;
+    const size=num(x.players_per_team)||1;let total=0,first=0;const parts=[];
+    const add=(p,val,label)=>{if(p.scope&&p.scope!=='PLACEMENT')return;const[a,b]=vfPlaces(p.place_variant);if(!a)return;
+      total+=val*(b-a+1);if(a===1)first+=val;parts.push([a,(a===b?a+'.':a+'.–'+b+'.')+' '+label])};
+    for(const p of x.monetary_prizes||[])add(p,num(p.amount_cents)/100,eur(num(p.amount_cents)/100));
+    for(const p of x.physical_prizes||[])add(p,num(p.value_cents)/100,p.name||eur(num(p.value_cents)/100));
+    parts.sort((u,v)=>u[0]-v[0]);
+    out.push(item({feedId:'vf:'+x.id,source:'vieforit',platform:'Vieforit',name:x.name,startTs:s,
+      mode:size===1?'1v1':size===2?'2v2':size===3?'3v3':'5v5',currentPlayers:x.registered_teams_count,maxPlayers:x.max_teams_count,
+      buyin:num(x.entry_fee_amount_cents)/100,prize:Math.round(total*100)/100,p1:first,prizeText:parts.map(p=>p[1]).join(', '),
+      url:'https://vieforit.com/cs2/tournaments/'+encodeURIComponent(x.slug||x.id),live:x.status==='STARTED',
+      note:'Hrá sa cez Vieforit klienta s Akros Anti-Cheat. Check-in 15–60 min pred štartom.'}));
+  }
+  return out;
+}
+async function srcChallengermode(){
+  const r=await getRemote('https://www.challengermode.com/xml/feed/tournaments',{ttl:900,json:false});
+  const doc=new DOMParser().parseFromString(r.body,'application/xml'),out=[],hz=Date.now()+HORIZON_DAYS*864e5;
+  for(const e of doc.querySelectorAll('entry')){
+    const sum=e.querySelector('summary')?.textContent||'';if(!/^(CS2|Counter-Strike)/i.test(sum.trim()))continue;
+    const sm=sum.match(/Start time\s+([^.]+?GMT)/i),s=sm?Date.parse(sm[1]):NaN;
+    if(!isFinite(s)||s<Date.now()-3*3600e3||s>hz)continue;
+    const link=e.querySelector('link')?.getAttribute('href')||'',vs=sum.match(/(\d)\s*vs\s*(\d)/i),sl=sum.match(/(\d+)\s*Slots/i);
+    out.push(item({feedId:'cm:'+(e.querySelector('id')?.textContent||link).split(':').pop(),source:'challengermode',platform:'Challengermode',
+      name:(e.querySelector('title')?.textContent||'').replace(/\s*-\s*Overview\s*-\s*Tournament\s*$/i,''),startTs:s,
+      mode:vs?`${vs[1]}v${vs[2]}`:'5v5',maxPlayers:sl?sl[1]:'',buyin:/Free to enter/i.test(sum)?0:parseMoney((sum.match(/Entry(?: fee)?[:\s]+([^,]+)/i)||[])[1]),url:link,note:sum}));
+  }
+  return out;
+}
+async function srcToornament(){
+  const cfg=S.settings.sources.toornament,key=String(cfg.key||'').trim();if(!key)throw new Error('Chýba API kľúč');
+  if(!cfg.disciplines){const f=[];for(let i=0;i<1000;i+=50){const a=await getRemote('https://api.toornament.com/viewer/v2/disciplines',{headers:{'X-Api-Key':key,Range:`disciplines=${i}-${i+49}`},ttl:86400});
+    (Array.isArray(a)?a:[]).filter(d=>/counter.?strike\s*2|\bcs2\b/i.test(`${d.id} ${d.name} ${d.fullname}`)).forEach(d=>f.push(d.id));if(!Array.isArray(a)||a.length<50)break}
+    cfg.disciplines=(f.length?f:['counterstrike_go']).join(',')}
+  const out=[],from=localISO(addDays(new Date(),-1)),to=localISO(addDays(new Date(),HORIZON_DAYS));
+  for(let i=0;i<200;i+=50){
+    const a=await getRemote(`https://api.toornament.com/viewer/v2/tournaments/featured?disciplines=${encodeURIComponent(cfg.disciplines)}&statuses=pending,running&scheduled_after=${from}&scheduled_before=${to}&sort=scheduled_asc`,{headers:{'X-Api-Key':key,Range:`tournaments=${i}-${i+49}`},ttl:900});
+    for(const x of Array.isArray(a)?a:[])out.push(item({feedId:'tt:'+x.id,source:'toornament',platform:'Toornament',name:x.full_name||x.name,noTime:true,
+      startTs:x.scheduled_date_start?new Date(x.scheduled_date_start+'T12:00').getTime():0,mode:mapMode(x.full_name||x.name)||'5v5',maxPlayers:x.size,
+      url:`https://play.toornament.com/en_US/tournaments/${encodeURIComponent(x.id)}/`,note:x.location||''}));
+    if(!Array.isArray(a)||a.length<50)break;
+  }
+  return out;
+}
+async function srcFastcup(){
+  // server posiela presný dotaz FastCup stránky (iný dotaz ich API nepustí)
+  let j;
+  try{const r=await fetch('/api/fastcup?days='+HORIZON_DAYS,{cache:'no-store'});j=await r.json();if(!r.ok)throw new Error(j.error||'HTTP '+r.status)}
+  catch(e){if(e instanceof TypeError)throw new Error('Server nebeží');throw e}
+  const out=[],hz=Date.now()+HORIZON_DAYS*864e5;
+  for(const x of j.tournaments||[]){
+    const s=Date.parse(x.firstStageScheduledAt);if(!isFinite(s)||s>hz)continue;
+    const size=num(x.gameMode?.teamSize)||1,fb=num(x.freebetRub)*size; // freebet dostáva každý hráč tímu
+    let pf=String(x.prizeFund||'').trim();
+    if(fb&&!/[1-9]/.test(pf))pf=fb+'₽ freebety (Winline)';
+    const prize=/₽|rub/i.test(pf)?Math.round(num(pf.replace(/[^\d]/g,''))*0.0105*100)/100:parseMoney(pf);
+    const org=x.organizer?.name||'FASTCUP';
+    out.push(item({feedId:'fc:'+x.id,source:'fastcup',platform:'FastCup',name:x.name+(x.premiumRequired?' (Premium)':''),startTs:s,
+      mode:size===1?'1v1':size===2?'2v2':size===3?'3v3':'5v5',currentPlayers:x.activeRosters,maxPlayers:x.slots,buyin:0,
+      prize:/\d/.test(pf)?prize:0,prizeText:pf+(/₽/.test(pf)?` (≈ ${eur(prize)})`:'')+(x.paidPlaces?` · ${x.paidPlaces} miest s výhrou`:''),
+      url:'https://cs2.fastcup.net/tournaments/'+encodeURIComponent(x.id),live:x.state==='ACTIVE',
+      note:[org!=='FASTCUP'?'Organizátor: '+org:'',x.premiumRequired?'Len pre FastCup Premium.':'',x.anticheatEnabled?'Vyžaduje FastCup anti-cheat.':'',/\d/.test(pf)?'':'Výhra: '+pf].filter(Boolean).join(' ')}));
+  }
+  return out;
+}
+const SOURCES=[
+  {id:'fastcup',name:'FastCup',fn:srcFastcup,desc:'Denné 1v1 aim a 2v2 wingman cupy o peniaze, celý svet'},
+  {id:'vieforit',name:'Vieforit',fn:srcVieforit,desc:'Denné 1v1 a 2v2 cupy o peniaze, bez vstupného'},
+  {id:'challengermode',name:'Challengermode',fn:srcChallengermode,desc:'Verejné CS2 turnaje'},
+  {id:'toornament',name:'Toornament',fn:srcToornament,key:true,desc:'Komunitné turnaje – potrebuje API kľúč'}
+];
+const modeOk=m=>S.settings.modes.includes(m);
+
+/* ---------- synchronizácia ---------- */
+function prune(){
+  const now=Date.now(),ids=new Set(SOURCES.map(s=>s.id));
+  S.feed.items=S.feed.items.filter(i=>ids.has(i.source)&&modeOk(i.mode)&&(!i.startTs||i.startTs>now-2*3600e3));
+  const known=new Set(S.feed.items.map(i=>i.feedId));S.feed.hidden=(S.feed.hidden||[]).filter(id=>known.has(id));
+}
+async function sync(force=false){
+  if(syncing)return;
+  if(!force&&Date.now()-S.lastSync<30*60e3){renderRefresh();return}
+  syncing=true;renderRefresh();
+  // zdroje, ktoré potrebujú kľúč, bez kľúča preskočíme (inak by hlásili chybu pri každej obnove)
+  const todo=SOURCES.filter(s=>S.settings.sources[s.id]?.on&&(!s.key||String(S.settings.sources[s.id].key||'').trim()));let errors=0;
+  await Promise.all(todo.map(async src=>{
+    try{
+      const items=(await src.fn()).filter(i=>modeOk(i.mode));
+      S.feed.items=[...S.feed.items.filter(i=>i.source!==src.id),...items];
+      S.feed.sources[src.id]={at:Date.now(),count:items.length,error:''};
+      for(const it of items){const t=S.tournaments.find(x=>x.feedId===it.feedId);
+        if(t)Object.assign(t,{currentPlayers:it.currentPlayers,maxPlayers:it.maxPlayers,date:it.date||t.date,time:it.time||t.time,startTs:it.startTs||t.startTs})}
+      syncLog(`${src.name}: ${items.length} turnajov`,'ok');
+    }catch(e){errors++;S.feed.sources[src.id]={...(S.feed.sources[src.id]||{}),error:e.message};syncLog(`${src.name}: ${e.message}`,'err')}
+  }));
+  S.lastSync=errors&&errors===todo.length?Date.now()-25*60e3:Date.now();
+  prune();save();syncing=false;renderAll();
+  if(force)toast(errors?'Niektoré stránky sa nenačítali':`Načítaných ${S.feed.items.length} turnajov`,!!errors);
+}
+function renderRefresh(){
+  const b=$('refresh');b.classList.toggle('busy',syncing);b.classList.toggle('err',serverOk===false);
+  $('refreshTxt').textContent=syncing?'Načítavam…':serverOk===false?'Server nebeží':S.lastSync?'Aktualizované '+localHM(new Date(S.lastSync)):'Aktualizovať';
+}
+
+/* ---------- riadky ---------- */
+function dayLabel(ds){
+  if(!ds)return'Bez dátumu';
+  const d=new Date(ds+'T00:00'),diff=Math.round((d-new Date(new Date().setHours(0,0,0,0)))/864e5);
+  const w=d.toLocaleDateString('sk-SK',{weekday:'long',day:'numeric',month:'numeric'});
+  return diff===0?'Dnes · '+w:diff===1?'Zajtra · '+w:w;
+}
+function metaLine(t){
+  const bits=[esc(t.platform)];
+  const cur=num(t.currentPlayers),max=num(t.maxPlayers);
+  if(max)bits.push(cur>=max&&t.currentPlayers!==''?`<span class="full">plné ${cur}/${max}</span>`:t.currentPlayers===''?`${max} miest`:`${cur}/${max} hráčov`);
+  if(num(t.buyin))bits.push('vstup '+eur(t.buyin));
+  return bits.join(' · ');
+}
+function prizeCell(t){
+  const v=num(t.p1)||num(t.prize);
+  return v?`<div class="pz"><b>${eur(v)}</b><small>${num(t.p1)?'1. miesto':'pool'}</small></div>`:`<div class="pz no"><b>—</b></div>`;
+}
+function rowFind(it){
+  const on=S.tournaments.some(t=>t.feedId===it.feedId),url=safeUrl(it.url);
+  return`<div class="row">
+    <div class="tm ${it.live?'live':''}">${esc(it.time||'—')}</div>
+    <div class="nm" data-act="fdetail" data-id="${esc(it.feedId)}"><b><span class="md m${it.mode[0]}">${esc(it.mode)}</span>${esc(it.name)}</b><small>${metaLine(it)}</small></div>
+    ${prizeCell(it)}
+    <button class="star ${on?'on':''}" data-act="track" data-id="${esc(it.feedId)}" title="${on?'Prestať sledovať':'Sledovať'}" aria-label="${on?'Prestať sledovať':'Sledovať'}">${icon('star')}</button>
+    ${url?`<a class="go" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Otvoriť stránku turnaja" aria-label="Otvoriť stránku turnaja">${icon('ext','sm')}</a>`:'<span></span>'}
+  </div>`;
+}
+const ST={planned:'Plánujem',registered:'Prihlásený',played:'Odohrané',skipped:'Nehrám'};
+function rowMine(t){
+  const url=safeUrl(t.url);
+  const right=t.status==='played'?`<div class="pz"><b>${eur(t.resultWin)}</b><small>${t.resultPlace?esc(t.resultPlace)+'. miesto':'vyhrané'}</small></div>`:prizeCell(t);
+  return`<div class="row mine ${t.status==='skipped'?'done':''}">
+    <div class="tm">${esc(t.time||'—')}</div>
+    <div class="nm" data-act="detail" data-id="${esc(t.id)}"><b><span class="md m${t.mode[0]}">${esc(t.mode)}</span>${esc(t.name)}</b><small>${metaLine(t)}</small></div>
+    ${right}
+    <button class="st ${t.status}" data-act="cycle" data-id="${esc(t.id)}" title="Klikni pre zmenu stavu">${ST[t.status]}</button>
+    ${url?`<a class="go" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Otvoriť stránku turnaja">${icon('ext','sm')}</a>`:'<span></span>'}
+  </div>`;
+}
+function byDay(list,fn){
+  const g=new Map();for(const x of list){const k=x.date||'';if(!g.has(k))g.set(k,[]);g.get(k).push(x)}
+  let h='';const today=localISO();
+  for(const[k,a]of g)h+=`<div class="day"><div class="dayT ${k===today?'today':''}"><b>${esc(dayLabel(k))}</b><span>${a.length} ${plural(a.length,'turnaj','turnaje','turnajov')}</span></div>${a.map(fn).join('')}</div>`;
+  return h;
+}
+function opts(id,list,cur,key){$(id).innerHTML=list.map(([v,l])=>`<button class="${cur===v?'on':''}" data-opt="${key}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}
+
+/* ---------- Turnaje ---------- */
+function renderFind(){
+  prune();
+  const today=localISO(),tom=localISO(addDays(new Date(),1)),until=/^\d+$/.test(ui.when)?localISO(addDays(new Date(),+ui.when)):'',hidden=new Set(S.feed.hidden);
+  const all=S.feed.items.filter(i=>!hidden.has(i.feedId));
+  opts('fMode',[['','Všetko'],...S.settings.modes.map(m=>[m,m])],ui.mode,'mode');
+  opts('fWhen',[['today','Dnes'],['tomorrow','Zajtra'],['7','Týždeň'],['14','2 týždne']],ui.when,'when');
+  const q=$('fQ').value.trim().toLowerCase(),sort=$('fSort').value;
+  const list=all.filter(i=>(!ui.mode||i.mode===ui.mode)&&(ui.when!=='today'||i.date===today)&&(ui.when!=='tomorrow'||i.date===tom)&&(!until||i.date<=until)
+    &&(!q||(i.name+' '+i.platform).toLowerCase().includes(q)))
+    .sort((a,b)=>sort==='prize'?(num(b.p1)||num(b.prize))-(num(a.p1)||num(a.prize))||a.startTs-b.startTs:a.startTs-b.startTs);
+  const nToday=all.filter(i=>i.date===today).length,next=all.filter(i=>i.startTs>Date.now()).sort((a,b)=>a.startTs-b.startTs)[0];
+  $('findLead').textContent=all.length?`${all.length} ${plural(all.length,'turnaj','turnaje','turnajov')} na 2 týždne · dnes ${nToday}${next?` · najbližší o ${next.time}${next.date!==today?' ('+dayLabel(next.date).split(' · ')[0]+')':''}`:''}`:'';
+  if(!S.feed.items.length){
+    $('findList').innerHTML=`<div class="empty"><b>Zatiaľ žiadne turnaje</b>${serverOk===false?'Server nebeží. Zavri toto okno a spusti VANT Tracker znova.':'<button class="link" data-act="sync">Načítať turnaje</button>'}</div>`;return;
+  }
+  if(!list.length){$('findList').innerHTML='<div class="empty"><b>Nič nenašlo</b>Skús iný deň alebo mód.</div>';return}
+  const shown=list.slice(0,limit);
+  $('findList').innerHTML=(sort==='time'?byDay(shown,rowFind):`<div class="day">${shown.map(rowFind).join('')}</div>`)
+    +(list.length>limit?`<button class="more" data-act="more">Zobraziť ďalších ${list.length-limit}</button>`:'');
+}
+
+/* ---------- Moje ---------- */
+const isUp=t=>t.status!=='played'&&t.status!=='skipped'&&(!t.startTs||t.startTs>Date.now()-3*3600e3);
+function renderMine(){
+  const T=S.tournaments;
+  const won=T.reduce((s,t)=>s+num(t.resultWin),0),spent=T.filter(t=>t.status==='played'||t.status==='registered').reduce((s,t)=>s+num(t.buyin),0),bal=won-spent;
+  $('mineSum').innerHTML=`<div><b>${T.filter(t=>t.status==='registered').length}</b>prihlásený</div><div><b>${T.filter(t=>t.status==='played').length}</b>odohrané</div><div><b>${eur(won)}</b>vyhrané</div>${spent?`<div><b class="${bal>=0?'pos':'neg'}">${bal>=0?'+':''}${eur(bal)}</b>bilancia</div>`:''}`;
+  opts('mFilter',[['upcoming','Nadchádzajúce'],['played','Odohrané'],['all','Všetko']],ui.mine,'mine');
+  const list=(ui.mine==='upcoming'?T.filter(isUp):ui.mine==='played'?T.filter(t=>t.status==='played'):T.slice())
+    .sort((a,b)=>ui.mine==='upcoming'?a.startTs-b.startTs:b.startTs-a.startTs);
+  $('mineList').innerHTML=list.length?byDay(list,rowMine)
+    :`<div class="empty"><b>${T.length?'Nič tu nie je':'Zatiaľ nič nesleduješ'}</b>V zozname turnajov klikni na hviezdičku.</div>`;
+}
+function renderBadge(){const n=S.tournaments.filter(isUp).length;$('nMine').textContent=n||''}
+
+/* ---------- Kalendár ---------- */
+function renderCal(){
+  if(!calMonth){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1)}
+  const y=calMonth.getFullYear(),m=calMonth.getMonth(),start=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),today=localISO();
+  $('calTitle').textContent=calMonth.toLocaleDateString('sk-SK',{month:'long',year:'numeric'});
+  const col={registered:'var(--acc)',played:'var(--gold)',planned:'var(--muted)'};
+  let h=['Po','Ut','St','Št','Pi','So','Ne'].map(d=>`<div class="h">${d}</div>`).join('');
+  for(let i=0;i<start;i++)h+='<div class="x"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`,ev=S.tournaments.filter(t=>t.date===ds&&t.status!=='skipped').sort((a,b)=>a.time.localeCompare(b.time));
+    h+=`<div class="${ds===today?'t':''}"><span class="n">${d}</span>${ev.slice(0,3).map(t=>`<button class="ev" style="--c:${col[t.status]}" data-act="detail" data-id="${esc(t.id)}" title="${esc(t.name)}">${esc(t.time)} ${esc(t.name)}</button>`).join('')}${ev.length>3?`<span class="ev">+${ev.length-3}</span>`:''}</div>`;
+  }
+  const rest=(7-(start+days)%7)%7;for(let i=0;i<rest;i++)h+='<div class="x"></div>';
+  $('calGrid').innerHTML=h;
+}
+
+/* ---------- Nastavenia ---------- */
+function renderSet(){
+  $('srvNote').innerHTML=serverOk===false?`<p class="note err">Server nebeží – turnaje sa nenačítajú a nič sa neuloží. Zavri okno a spusti VANT Tracker znova (ikona na ploche alebo <code>Spustit_VANT.bat</code>).</p>`:'';
+  $('setModes').innerHTML=MODES.map(m=>`<button class="${S.settings.modes.includes(m)?'on':''}" data-act="setmode" data-id="${m}">${m}</button>`).join('');
+  $('srcList').innerHTML=SOURCES.map(s=>{
+    const c=S.settings.sources[s.id],st=S.feed.sources[s.id]||{};
+    const info=!c.on?esc(s.desc):st.error?`<p class="err">Chyba: ${esc(st.error)}</p>`:st.at?`<p class="ok">${st.count} turnajov · ${localHM(new Date(st.at))}</p>`:`<p>${esc(s.desc)}</p>`;
+    return`<div class="set"><div class="tx"><b>${esc(s.name)}</b>${info.startsWith('<')?info:`<p>${info}</p>`}${s.key&&c.on?`<input type="password" autocomplete="off" spellcheck="false" placeholder="API kľúč" value="${esc(c.key||'')}" data-key="${s.id}" aria-label="API kľúč ${esc(s.name)}">`:''}</div>
+      <label class="sw"><input type="checkbox" data-src="${s.id}" ${c.on?'checked':''} aria-label="${esc(s.name)}"><span></span></label></div>`;
+  }).join('');
+  $('extLinks').innerHTML=EXT_LINKS.map(([n,u,d])=>`<a class="ext" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><div class="tx"><b>${esc(n)}</b><p>${esc(d)}</p></div>${icon('ext','sm')}</a>`).join('');
+  if(document.activeElement!==$('cKey'))$('cKey').value=S.settings.claude.key||'';
+  $('cModel').value=S.settings.claude.model;
+}
+
+/* ---------- detail ---------- */
+function dl(t){
+  const rows=[['Kedy',`${dayLabel(t.date).split(' · ')[0]} ${t.time||''}`],['Mód',t.mode],['Stránka',t.platform]];
+  if(num(t.maxPlayers))rows.push(['Hráči',t.currentPlayers===''?t.maxPlayers+' miest':`${t.currentPlayers||0} / ${t.maxPlayers}`]);
+  rows.push(['Vstupné',num(t.buyin)?eur(t.buyin):'zadarmo']);
+  if(num(t.p1))rows.push(['1. miesto',eur(t.p1)]);
+  if(num(t.prize))rows.push(['Prize pool',eur(t.prize)]);
+  return`<dl class="dl">${rows.map(([a,b])=>`<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('')}</dl>`+(t.prizeText?`<p class="dNote">Ceny: ${esc(t.prizeText)}</p>`:'');
+}
+function openFeed(id){
+  const it=S.feed.items.find(i=>i.feedId===id);if(!it)return;
+  const on=S.tournaments.some(t=>t.feedId===id),url=safeUrl(it.url);
+  $('dlgIn').innerHTML=`<div class="dTop"><h2>${esc(it.name)}</h2><button class="x" data-act="close" aria-label="Zavrieť">${icon('x')}</button></div>${dl(it)}
+    ${it.note?`<p class="dNote">${esc(it.note)}</p>`:''}
+    <div class="actions"><button class="btn" data-act="track" data-id="${esc(id)}">${on?'Prestať sledovať':'Sledovať'}</button>
+    ${url?`<a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Otvoriť na ${esc(it.platform)}</a>`:''}
+    <button class="btn ghost" data-act="hide" data-id="${esc(id)}">Skryť</button></div>`;
+  if(!dlg.open)dlg.showModal();
+}
+function openDetail(id){
+  const t=S.tournaments.find(x=>x.id===id);if(!t)return;const url=safeUrl(t.url);
+  $('dlgIn').innerHTML=`<div class="dTop"><h2>${esc(t.name)}</h2><button class="x" data-act="close" aria-label="Zavrieť">${icon('x')}</button></div>${dl(t)}
+    ${t.note?`<p class="dNote">${esc(t.note)}</p>`:''}
+    <div class="sec" style="margin-top:22px"><h2>Výsledok</h2>
+      <div class="g3" style="margin-top:10px;align-items:end">
+        <div><label class="l" for="rPlace">Miesto</label><input id="rPlace" type="number" min="1" value="${esc(t.resultPlace)}"></div>
+        <div><label class="l" for="rWin">Vyhral som (€)</label><input id="rWin" type="number" min="0" step="0.01" value="${t.resultWin||''}"></div>
+        <button class="btn" data-act="result" data-id="${esc(t.id)}" style="justify-content:center">Uložiť</button>
+      </div></div>
+    <details><summary>Upraviť údaje</summary><div class="stack" style="margin-top:12px">
+      <div><label class="l" for="eName">Názov</label><input id="eName" value="${esc(t.name)}"></div>
+      <div class="g3"><div><label class="l" for="eDate">Dátum</label><input id="eDate" type="date" value="${esc(t.date)}"></div>
+        <div><label class="l" for="eTime">Čas</label><input id="eTime" type="time" value="${esc(t.time)}"></div>
+        <div><label class="l" for="eMode">Mód</label><select class="f" id="eMode">${MODES.map(m=>`<option ${t.mode===m?'selected':''}>${m}</option>`).join('')}</select></div></div>
+      <div class="g3"><div><label class="l" for="eP1">1. miesto €</label><input id="eP1" type="number" min="0" step="0.01" value="${num(t.p1)}"></div>
+        <div><label class="l" for="ePrize">Pool €</label><input id="ePrize" type="number" min="0" step="0.01" value="${num(t.prize)}"></div>
+        <div><label class="l" for="eBuyin">Vstupné €</label><input id="eBuyin" type="number" min="0" step="0.01" value="${num(t.buyin)}"></div></div>
+      <div><label class="l" for="eUrl">Odkaz</label><input id="eUrl" value="${esc(t.url)}"></div>
+      <div><label class="l" for="eNote">Poznámka</label><textarea id="eNote" rows="3">${esc(t.note)}</textarea></div>
+      <div class="actions" style="margin-top:0"><button class="btn" data-act="edit" data-id="${esc(t.id)}">Uložiť zmeny</button></div></div></details>
+    <div class="actions">${url?`<a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Otvoriť stránku turnaja</a>`:''}<button class="btn red" data-act="remove" data-id="${esc(t.id)}">Vymazať</button></div>`;
+  if(!dlg.open)dlg.showModal();
+}
+
+/* ---------- akcie ---------- */
+function track(fid){
+  const ex=S.tournaments.find(t=>t.feedId===fid);
+  if(ex){if((ex.status==='played'||ex.resultWin)&&!confirm('Turnaj má zapísaný výsledok. Naozaj ho odstrániť?'))return;S.tournaments=S.tournaments.filter(t=>t!==ex);toast('Odstránené z Moje')}
+  else{const it=S.feed.items.find(i=>i.feedId===fid);if(!it)return;S.tournaments.push(normT({...it,id:uid(),status:'planned'}));toast('Pridané do Moje')}
+  save();if(dlg.open)dlg.close();renderAll();
+}
+function cycle(id){
+  const t=S.tournaments.find(x=>x.id===id);if(!t)return;
+  const order=['planned','registered','played','skipped'];t.status=order[(order.indexOf(t.status)+1)%order.length];
+  save();renderAll();if(t.status==='played'&&!t.resultWin)openDetail(id);
+}
+function saveResult(id){const t=S.tournaments.find(x=>x.id===id);if(!t)return;t.resultPlace=Math.max(0,Math.round(num($('rPlace').value)))||'';t.resultWin=Math.max(0,num($('rWin').value));t.status='played';save();dlg.close();renderAll();toast('Výsledok uložený')}
+function saveEdit(id){
+  const t=S.tournaments.find(x=>x.id===id);if(!t)return;
+  Object.assign(t,{name:$('eName').value.trim()||t.name,date:$('eDate').value,time:$('eTime').value,mode:$('eMode').value,p1:num($('eP1').value),prize:num($('ePrize').value),buyin:num($('eBuyin').value),url:$('eUrl').value.trim(),note:$('eNote').value});
+  t.startTs=t.date?new Date(t.date+'T'+(t.time||'00:00')).getTime():0;save();renderAll();openDetail(id);toast('Uložené');
+}
+function removeT(id){const t=S.tournaments.find(x=>x.id===id);if(!t||!confirm(`Vymazať „${t.name}“?`))return;S.tournaments=S.tournaments.filter(x=>x!==t);save();dlg.close();renderAll()}
+function hideFeed(id){S.feed.hidden.push(id);save();if(dlg.open)dlg.close();renderFind();toast('Skryté')}
+
+/* ---------- pridať ---------- */
+function renderDrop(){const d=$('drop');d.classList.toggle('has',!!draft.image);d.innerHTML=draft.image?`<img src="${esc(draft.image)}" alt="Screenshot">`:`${icon('image')}<b>Vlož screenshot</b>Ctrl+V, pretiahni sem alebo klikni`}
+function renderAddForm(){
+  $('aMode').innerHTML=MODES.map(m=>`<button type="button" class="${draft.mode===m?'on':''}" data-act="amode" data-id="${m}">${m}</button>`).join('');
+  if(!$('aPlatform').options.length)$('aPlatform').innerHTML=PLATFORMS.map(p=>`<option>${esc(p)}</option>`).join('');
+  if(!$('aDate').value)$('aDate').value=localISO();
+}
+function fillForm(t){
+  if(t.name)$('aName').value=t.name;
+  const pl=PLATFORMS.find(p=>p.toLowerCase()===String(t.platform||'').toLowerCase());if(pl)$('aPlatform').value=pl;
+  const m=mapMode(t.mode)||t.mode;if(MODES.includes(m)){draft.mode=m;renderAddForm()}
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t.date||''))$('aDate').value=t.date;
+  if(/^\d{1,2}:\d{2}$/.test(t.time||''))$('aTime').value=t.time.padStart(5,'0');
+  if(t.maxPlayers)$('aSlots').value=t.maxPlayers;
+  if(num(t.p1))$('aP1').value=num(t.p1);if(num(t.prize))$('aPrize').value=num(t.prize);if(num(t.buyin))$('aBuyin').value=num(t.buyin);
+  if(t.url)$('aUrl').value=t.url;if(t.note)$('aNote').value=t.note;
+}
+function resetForm(){['aName','aTime','aSlots','aP1','aPrize','aBuyin','aUrl','aNote'].forEach(i=>$(i).value='');$('aDate').value=localISO();draft.mode='1v1';draft.image='';aiBatch=[];renderBatch();renderDrop();renderAddForm();ocrStatus('')}
+function saveForm(){
+  const t=normT({name:$('aName').value,platform:$('aPlatform').value,mode:draft.mode,date:$('aDate').value,time:$('aTime').value,maxPlayers:$('aSlots').value,p1:$('aP1').value,prize:$('aPrize').value,buyin:$('aBuyin').value,url:$('aUrl').value.trim(),note:$('aNote').value});
+  if(!t){toast('Zadaj názov turnaja',true);$('aName').focus();return}
+  S.tournaments.push(t);save();resetForm();toast('Uložené do Moje');go('mine');
+}
+function renderBatch(){$('batch').classList.toggle('show',aiBatch.length>1);$('batchTxt').textContent=`Na obrázku je ${aiBatch.length} turnajov, prvý je vo formulári.`}
+function addBatch(){let n=0;for(const r of aiBatch){const t=normT({...r,platform:PLATFORMS.find(p=>p.toLowerCase()===String(r.platform||'').toLowerCase())||$('aPlatform').value});if(t){S.tournaments.push(t);n++}}aiBatch=[];save();resetForm();toast(`Pridaných ${n} turnajov`);go('mine')}
+function compress(file){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=()=>rej(new Error('Súbor sa nedá prečítať'));r.onload=()=>{const im=new Image();im.onerror=()=>rej(new Error('Nepodporovaný obrázok'));im.onload=()=>{const sc=Math.min(1,1600/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.88))};im.src=r.result};r.readAsDataURL(file)})}
+async function takeImage(f){if(!f)return;try{draft.image=await compress(f);renderDrop();readImage()}catch(e){toast(e.message,true)}}
+async function readImage(){
+  if(!draft.image)return;
+  if(S.settings.claude.key){
+    ocrStatus('Claude číta screenshot…');
+    try{const r=await post('/api/claude',{task:'image',image:draft.image,apiKey:S.settings.claude.key,model:S.settings.claude.model,today:localISO()},240000);
+      const list=(r.tournaments||[]).filter(t=>t&&t.name);
+      if(list.length){fillForm(list[0]);aiBatch=list;renderBatch();ocrStatus('Hotovo – skontroluj údaje a ulož.','ok');return}
+      ocrStatus('Claude nenašiel turnaj, skúšam OCR…');
+    }catch(e){ocrStatus('Claude: '+e.message+' – skúšam OCR…','err')}
+  }
+  if(!window.Tesseract){ocrStatus('OCR sa nenačítalo (internet?)','err');return}
+  ocrStatus('Čítam text z obrázka…');
+  try{
+    const raw=(await Tesseract.recognize(draft.image,'eng')).data.text||'',c=raw.replace(/\s+/g,' '),lines=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean),t={};
+    t.name=lines.find(l=>/cup|aim|duel|arena|league|tournament|turnaj|showdown|night|series|open/i.test(l)&&l.length>3&&l.length<70&&!/^(fast\s?cup|vieforit|challengermode)$/i.test(l));
+    t.platform=(c.match(/fastcup|vieforit|challengermode|esportal|gamers ?club|toornament/i)||[''])[0].replace(/gamers ?club/i,'Gamers Club');
+    t.mode=mapMode(c);
+    const tm=c.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);if(tm)t.time=`${pad(tm[1])}:${tm[2]}`;
+    const dm=c.match(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})\b/);if(dm&&+dm[2]<=12){let y=+dm[3];if(y<100)y+=2000;t.date=`${y}-${pad(dm[2])}-${pad(dm[1])}`}else if(/tomorrow|zajtra/i.test(c))t.date=localISO(addDays(new Date(),1));
+    const sl=c.match(/\b(\d{1,4})\s*\/\s*(\d{1,4})\b/);if(sl&&+sl[1]<=+sl[2])t.maxPlayers=sl[2];
+    const money=[...c.matchAll(/[€$]\s*\d+(?:[.,]\d+)?|\d+(?:[.,]\d+)?\s*(?:€|eur\b|usd\b|\$)/gi)].map(m=>parseMoney(m[0])).filter(v=>v>0).sort((a,b)=>b-a);
+    if(money.length){t.prize=money[0];if(money[1])t.p1=money[1]}
+    fillForm(t);ocrStatus('Hotovo – OCR je menej presné, skontroluj údaje.','ok');
+  }catch(e){ocrStatus('Čítanie zlyhalo','err')}
+}
+async function aiFromUrl(){
+  const url=safeUrl($('aiUrl').value);if(!url){toast('Zadaj odkaz',true);return}
+  if(!S.settings.claude.key){toast('Najprv zadaj Claude kľúč v Nastaveniach',true);return}
+  const b=$('aiUrlBtn');b.disabled=true;b.textContent='Čítam…';
+  try{const r=await post('/api/claude',{task:'page',url,apiKey:S.settings.claude.key,model:S.settings.claude.model,today:localISO()},240000);
+    const list=(r.tournaments||[]).filter(t=>t&&t.name).map(t=>({...t,url:t.url||url}));
+    if(!list.length){toast('Nenašiel som turnaj – skús screenshot',true);return}
+    fillForm(list[0]);aiBatch=list;renderBatch();toast('Načítané');window.scrollTo({top:0,behavior:'smooth'})}
+  catch(e){toast(e.message,true)}finally{b.disabled=false;b.textContent='Načítať'}
+}
+
+/* ---------- dáta ---------- */
+function exportData(){const b=new Blob([JSON.stringify({...S,settings:{...S.settings,claude:{...S.settings.claude,key:''}}},null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`vant-zaloha-${localISO()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function importData(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const j=JSON.parse(await f.text()),arr=Array.isArray(j)?j:j.tournaments||j.data;if(!Array.isArray(arr))throw 0;
+    const ids=new Set(S.tournaments.map(t=>t.id)),fresh=arr.map(normT).filter(t=>t&&!ids.has(t.id));
+    S.tournaments.push(...fresh);save();renderAll();toast(`Nahraných ${fresh.length} turnajov`)}catch(err){toast('Neplatný súbor',true)}
+}
+
+/* ---------- navigácia ---------- */
+const dlg=$('dlg');
+function go(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  if(dlg.open)dlg.close();renderAll();window.scrollTo({top:0});
+}
+function renderAll(){
+  const v=document.querySelector('.view.on').id.slice(5);
+  renderBadge();renderRefresh();
+  if(v==='find')renderFind();if(v==='mine')renderMine();if(v==='cal')renderCal();if(v==='set')renderSet();if(v==='add')renderAddForm();
+}
+function bind(){
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));
+  $('refresh').onclick=()=>sync(true);
+  ['fQ','fSort'].forEach(id=>$(id).addEventListener('input',()=>{limit=40;renderFind()}));
+  document.addEventListener('click',e=>{
+    const o=e.target.closest('[data-opt]');if(o){ui[o.dataset.opt]=o.dataset.v;limit=40;o.dataset.opt==='mine'?renderMine():renderFind();return}
+    const c=e.target.closest('[data-cal]');if(c){const d=+c.dataset.cal,n=new Date();calMonth=d===0?new Date(n.getFullYear(),n.getMonth(),1):new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();return}
+    const el=e.target.closest('[data-act]');if(!el)return;const id=el.dataset.id;
+    ({track:()=>track(id),hide:()=>hideFeed(id),fdetail:()=>openFeed(id),detail:()=>openDetail(id),close:()=>dlg.close(),cycle:()=>cycle(id),
+      result:()=>saveResult(id),edit:()=>saveEdit(id),remove:()=>removeT(id),more:()=>{limit+=40;renderFind()},sync:()=>sync(true),
+      amode:()=>{draft.mode=id;renderAddForm()},
+      setmode:()=>{const m=S.settings.modes,i=m.indexOf(id);if(i>=0){if(m.length===1){toast('Nechaj aspoň jeden mód',true);return}m.splice(i,1)}else m.push(id);save();renderSet();sync(true)}
+    })[el.dataset.act]?.();
+  });
+  dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+  $('srcList').addEventListener('change',e=>{
+    const s=e.target.dataset.src,k=e.target.dataset.key;
+    if(s){S.settings.sources[s].on=e.target.checked;if(!e.target.checked)S.feed.items=S.feed.items.filter(i=>i.source!==s);save();renderSet();if(e.target.checked)sync(true)}
+    if(k){S.settings.sources[k].key=e.target.value.trim();delete S.settings.sources[k].disciplines;save();toast('Kľúč uložený');sync(true)}
+  });
+  $('cKey').onchange=()=>{S.settings.claude.key=$('cKey').value.trim();save();toast('Kľúč uložený')};
+  $('cModel').onchange=()=>{S.settings.claude.model=$('cModel').value;save()};
+  $('expBtn').onclick=exportData;$('impBtn').onclick=()=>$('impFile').click();$('impFile').onchange=importData;
+  $('wipeBtn').onclick=()=>{if(confirm('Vymazať všetky moje turnaje a výsledky? Ranná záloha ostane v data/zalohy.')){S.tournaments=[];save();renderAll()}};
+  const d=$('drop');
+  d.onclick=()=>$('fileImg').click();d.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileImg').click()}};
+  d.ondragover=e=>{e.preventDefault();d.classList.add('over')};d.ondragleave=()=>d.classList.remove('over');
+  d.ondrop=e=>{e.preventDefault();d.classList.remove('over');const f=e.dataTransfer.files[0];f&&f.type.startsWith('image/')?takeImage(f):toast('Pretiahni obrázok',true)};
+  $('fileImg').onchange=()=>{takeImage($('fileImg').files[0]);$('fileImg').value=''};
+  $('batchAdd').onclick=addBatch;$('aSave').onclick=saveForm;$('aReset').onclick=resetForm;$('aiUrlBtn').onclick=aiFromUrl;
+  document.addEventListener('paste',e=>{const im=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(!im)return;e.preventDefault();if(!$('view-add').classList.contains('on'))go('add');takeImage(im.getAsFile())});
+}
+async function init(){
+  bind();renderDrop();renderAddForm();
+  await loadStore();prune();renderAll();
+  if(serverOk)sync(false);
+  setInterval(()=>{if(serverOk!==false)sync(false)},60e3);
+  setInterval(()=>{if(!dlg.open)renderAll()},5*60e3);
+}
+init();
+</script>
+</body>
+</html>
